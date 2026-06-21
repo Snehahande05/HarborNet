@@ -1,197 +1,22 @@
 {
-  "annotations": {
-    "list": [
-      {
-        "builtIn": 1,
-        "datasource": "-- Grafana --",
-        "enable": true,
-        "hide": true,
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
-      }
-    ]
-  },
-  "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "id": null,
-  "links": [],
-  "liveNow": false,
+  "title": "HarborNet Monitoring Dashboard",
+  "tags": ["HarborNet", "DevOps", "Monitoring"],
+
   "panels": [
     {
-      "collapsed": false,
-      "gridPos": {
-        "h": 3,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 1,
-      "title": "HarborNet Platform Uptime Status",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "match": "null",
-                "result": {
-                  "text": "N/A"
-                }
-              },
-              "type": "special"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 0,
-        "y": 3
-      },
-      "id": 2,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
       "title": "Application Uptime",
       "type": "stat",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "up{job=\"harbornet-application\"}",
-          "legendFormat": "Uptime State",
-          "range": true,
-          "refId": "A"
-        }
-      ]
+      "query": "up{job=\"harbornet-application\"}"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 16,
-        "x": 8,
-        "y": 3
-      },
-      "id": 3,
-      "title": "HTTP Request Latency Rate (Seconds)",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])",
-          "legendFormat": "Average Latency",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      }
+      "title": "Request Latency",
+      "type": "graph",
+      "query": "rate(http_request_duration_seconds_sum[5m])"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 7
-      },
-      "id": 4,
-      "title": "SQLite Database Connections",
+      "title": "Database Connections",
       "type": "gauge",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sqlite_connections_count{status=\"active\"}",
-          "legendFormat": "Active Connections",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        }
-      }
+      "query": "sqlite_connections_count"
     }
-  ],
-  "refresh": "5s",
-  "schemaVersion": 36,
-  "style": "dark",
-  "tags": [
-    "DevOps",
-    "HarborNet",
-    "Monitoring"
-  ],
-  "time": {
-    "from": "now-1h",
-    "to": "now"
-  },
-  "timepicker": {},
-  "timezone": "",
-  "title": "HarborNet Maritime Control Platform",
-  "uid": "harbornet-maritime-dashboard",
-  "version": 1
+  ]
 }

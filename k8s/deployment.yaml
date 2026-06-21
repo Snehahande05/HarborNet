@@ -2,9 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: harbornet-deployment
-  labels:
-    app: harbornet
-    component: web-app
 spec:
   replicas: 2
   selector:
@@ -16,36 +13,8 @@ spec:
         app: harbornet
     spec:
       containers:
-      - name: harbornet
-        image: harbornet-platform:latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 5000
-          name: http-port
-        env:
-        - name: SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: harbornet-secrets
-              key: secret-key
-        - name: FLASK_ENV
-          value: "production"
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 5000
-          initialDelaySeconds: 15
-          periodSeconds: 20
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 5000
-          initialDelaySeconds: 10
-          periodSeconds: 10
+        - name: harbornet-app
+          image: localhost/harbornet-app:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000

@@ -1,126 +1,48 @@
-# HashiCorp Vault Secret Management Integration
+# Vault Secret Management for HarborNet
 
-This documentation outlines the steps required to deploy HashiCorp Vault, store sensitive configuration keys (like Flask session secret keys or database connection tokens), and securely inject them into the HarborNet runtime container.
+## Purpose
 
-```
-+-----------------------------------+
-| HashiCorp Vault Secret Storage    |
-| (secret/data/harbornet: SECRET_KEY) |
-+-----------------------------------+
-                  |
-                  | [Vault Agent Injector]
-                  v
-+-----------------------------------+
-| Kubernetes Pod: harbornet         |
-| - Runs sidecar agent              |
-| - Mounts secrets to /vault/secrets|
-+-----------------------------------+
-```
+HashiCorp Vault is used to securely store and manage sensitive information used by the HarborNet platform.
 
----
+## Secrets Stored
 
-## 1. Local/Staging Development Setup
-For developer testing, run Vault locally in a Docker container using Dev Mode:
+* Database Password
+* API Keys
+* Docker Credentials
+* Kubernetes Secrets
+* Authentication Tokens
 
-```bash
-# Run Vault server in development mode
-docker run --name harbornet-vault -d -p 8200:8200 -e "VAULT_DEV_ROOT_TOKEN_ID=my-root-token" hashicorp/vault:latest
+## Why Vault?
 
-# Configure shell environment
-export VAULT_ADDR="http://127.0.0.1:8200"
-export VAULT_TOKEN="my-root-token"
+* Prevents hardcoding passwords in source code
+* Provides secure secret storage
+* Controls access to sensitive information
+* Supports secret rotation and auditing
 
-# Verify service initialization
-vault status
-```
+## HarborNet Secret Flow
 
----
+Application
+↓
+Vault
+↓
+Secure Secret Retrieval
 
-## 2. Secrets Provisioning
-Write sensitive keys into Vault's Key-Value (KV) engine:
+## Example
 
-```bash
-# Enable Version 2 of KV Secrets Engine
-vault secrets enable -path=secret kv-v2
+Instead of storing:
 
-# Write Flask environment secrets
-vault kv put secret/harbornet \
-  SECRET_KEY="prod-session-super-secure-key-9911" \
-  DB_ENCRYPTION_KEY="harbornet-crypto-token"
-```
+DB_PASSWORD = "admin123"
 
----
+inside application code, HarborNet stores it securely in Vault and retrieves it when required.
 
-## 3. Vault Access Policy
-Create a granular read-only policy for the HarborNet application.
+## Benefits
 
-Create `harbornet-policy.hcl`:
+* Improved Security
+* Centralized Secret Management
+* Reduced Risk of Credential Exposure
+* Compliance with Security Standards
 
-```hcl
-path "secret/data/harbornet" {
-  capabilities = ["read"]
-}
-```
+## Viva Answer
 
-Write policy to Vault:
-```bash
-vault policy write harbornet-read harbornet-policy.hcl
-```
+Vault helps HarborNet securely manage passwords, API keys, and operational credentials without exposing them inside source code or configuration files.
 
----
-
-## 4. Kubernetes Security & Vault Agent Injection
-To avoid hardcoding credentials inside deployment YAMLs, configure the **Vault Agent Injector** to mount secrets inside the Pod at startup.
-
-### Step 4.1: Enable Kubernetes Auth in Vault
-```bash
-# Exec into Vault pod to configure Kubernetes authentication
-vault auth enable kubernetes
-
-# Bind Kubernetes service account token reviewer configs
-vault write auth/kubernetes/config \
-    kubernetes_host="https://kubernetes.default.svc:443"
-```
-
-### Step 4.2: Create Kubernetes Auth Role
-Map the Kubernetes service account to the read-only Vault policy:
-```bash
-vault write auth/kubernetes/role/harbornet-role \
-    bound_service_account_names=harbornet-sa \
-    bound_service_account_namespaces=default \
-    policies=harbornet-read \
-    ttl=24h
-```
-
-### Step 4.3: Configure Service Account and Annotations in Deployment
-Update Kubernetes manifests to specify the ServiceAccount and mount annotations.
-
-Create `k8s/service-account.yaml` (optional/integrated):
-```yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: harbornet-sa
-  namespace: default
-```
-
-Update `k8s/deployment.yaml` template metadata to include these injection annotations:
-```yaml
-spec:
-  template:
-    metadata:
-      annotations:
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: "harbornet-role"
-        # Secret path and template parsing:
-        vault.hashicorp.com/agent-inject-secret-config: "secret/data/harbornet"
-        vault.hashicorp.com/agent-inject-template-config: |
-          {{- with secret "secret/data/harbornet" -}}
-          export SECRET_KEY="{{ .Data.data.SECRET_KEY }}"
-          export DB_ENCRYPTION_KEY="{{ .Data.data.DB_ENCRYPTION_KEY }}"
-          {{- end -}}
-    spec:
-      serviceAccountName: harbornet-sa
-```
-
-The sidecar agent will fetch these secrets dynamically at Pod initialization, saving them to a RAM-disk volume at `/vault/secrets/config`. The application can read them via standard system source scripts (`source /vault/secrets/config`).
