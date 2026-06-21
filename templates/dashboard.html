@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}HarborNet - Global Maritime Control Dashboard{% endblock %}
+{% block page_title %}Global Control Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <!-- Total Vessels Card -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <p class="card-label">Total Fleet</p>
+                <h3 class="card-value">{{ vessels_count }}</h3>
+            </div>
+            <div class="card-icon icon-vessel">
+                <i class="fa-solid fa-ship"></i>
+            </div>
+        </div>
+    </div>
+    <!-- Active Cargo Card -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <p class="card-label">Active Cargo</p>
+                <h3 class="card-value">{{ cargo_count }}</h3>
+            </div>
+            <div class="card-icon icon-cargo">
+                <i class="fa-solid fa-boxes-stacked"></i>
+            </div>
+        </div>
+    </div>
+    <!-- Pending Customs Card -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <p class="card-label">Pending Customs</p>
+                <h3 class="card-value">{{ customs_count }}</h3>
+            </div>
+            <div class="card-icon icon-customs">
+                <i class="fa-solid fa-file-invoice"></i>
+            </div>
+        </div>
+    </div>
+    <!-- Active Ports Card -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <p class="card-label">Active Hubs</p>
+                <h3 class="card-value">{{ ports_count }}</h3>
+            </div>
+            <div class="card-icon icon-port">
+                <i class="fa-solid fa-anchor"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- System Alerts List -->
+    <div class="col-12 col-lg-7">
+        <div class="custom-card h-100">
+            <div class="custom-card-header">
+                <h4 class="custom-card-title"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Active System Alerts</h4>
+                <span class="badge bg-danger rounded-pill">{{ alerts_count }} Alerts</span>
+            </div>
+            <div class="custom-card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%">Severity</th>
+                                <th style="width: 25%">Location/ID</th>
+                                <th style="width: 45%">Description</th>
+                                <th style="width: 15%">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if system_alerts %}
+                                {% for alert in system_alerts %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if alert.severity == 'Critical' else 'warning' if alert.severity == 'High' else 'info' }} text-white">
+                                            {{ alert.severity }}
+                                        </span>
+                                    </td>
+                                    <td class="fw-semibold text-primary">{{ alert.target }}</td>
+                                    <td class="text-muted">{{ alert.message }}</td>
+                                    <td>
+                                        <a href="{{ alert.action_url }}" class="btn btn-sm btn-outline-primary px-3 py-1">Resolve</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        <i class="fa-solid fa-circle-check text-success fa-2xl mb-2 d-block"></i>
+                                        All systems operating within normal parameters.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Overview Stats -->
+    <div class="col-12 col-lg-5">
+        <div class="custom-card h-100">
+            <div class="custom-card-header">
+                <h4 class="custom-card-title"><i class="fa-solid fa-server text-info me-2"></i>Platform Health Monitor</h4>
+                <span class="badge bg-success rounded-pill">ONLINE</span>
+            </div>
+            <div class="custom-card-body">
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-semibold">Port Operations Load</span>
+                        <span class="text-primary fw-bold">68%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 68%" aria-valuenow="68" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-semibold">Customs Queue Backlog</span>
+                        <span class="text-warning fw-bold">25%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-semibold">Active Fleet Availability</span>
+                        <span class="text-success fw-bold">92%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 92%" aria-valuenow="92" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <hr class="my-4" style="opacity: 0.1;">
+
+                <div class="d-flex align-items-center gap-3">
+                    <div class="flex-shrink-0 bg-light-gray p-3 rounded-circle text-primary" style="background: rgba(11,27,61,0.05);">
+                        <i class="fa-solid fa-database fa-lg"></i>
+                    </div>
+                    <div>
+                        <span class="d-block fw-semibold text-primary">SQLite Engine</span>
+                        <span class="text-muted" style="font-size: 0.85rem;">Local storage initialized automatically.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

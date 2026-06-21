@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}HarborNet - Fleet Registry{% endblock %}
+{% block page_title %}Fleet Registry & Vessel Controls{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Register New Vessel Form -->
+    <div class="col-12 col-lg-4">
+        <div class="custom-card">
+            <div class="custom-card-header">
+                <h4 class="custom-card-title"><i class="fa-solid fa-ship text-primary me-2"></i>Register New Vessel</h4>
+            </div>
+            <div class="custom-card-body">
+                <form action="{{ url_for('vessels') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="vessel_name" class="form-label">Vessel Name</label>
+                        <input type="text" class="form-control" id="vessel_name" name="vessel_name" placeholder="e.g. Ocean Voyager" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="imo_number" class="form-label">IMO Number</label>
+                        <input type="text" class="form-control" id="imo_number" name="imo_number" placeholder="e.g. IMO 9876543" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="port_name" class="form-label">Destination / Docked Port</label>
+                        <select class="form-select" id="port_name" name="port_name" required>
+                            <option value="" disabled selected>Select destination port</option>
+                            {% for port in ports %}
+                            <option value="{{ port.port_name }}">{{ port.port_name }} ({{ port.country }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="berth_number" class="form-label">Berth Assignment</label>
+                        <input type="text" class="form-control" id="berth_number" name="berth_number" placeholder="e.g. Terminal A, Berth 4" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cargo_type" class="form-label">Cargo Classification</label>
+                        <input type="text" class="form-control" id="cargo_type" name="cargo_type" placeholder="e.g. LNG, Containers, Grain" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="status" class="form-label">Operational Status</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="Anchored">Anchored</option>
+                            <option value="In Transit" selected>In Transit</option>
+                            <option value="Docked">Docked</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Register Vessel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Fleet Table -->
+    <div class="col-12 col-lg-8">
+        <div class="custom-card">
+            <div class="custom-card-header">
+                <h4 class="custom-card-title"><i class="fa-solid fa-list-check text-primary me-2"></i>Active Fleet Log</h4>
+                <span class="badge bg-primary">{{ vessels | length }} Registered</span>
+            </div>
+            <div class="custom-card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Vessel Name</th>
+                                <th>IMO Number</th>
+                                <th>Current Port</th>
+                                <th>Berth</th>
+                                <th>Cargo Type</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if vessels %}
+                                {% for vessel in vessels %}
+                                <tr>
+                                    <td class="fw-semibold text-primary">{{ vessel.vessel_name }}</td>
+                                    <td><code class="text-muted">{{ vessel.imo_number }}</code></td>
+                                    <td>{{ vessel.port_name }}</td>
+                                    <td>{{ vessel.berth_number }}</td>
+                                    <td>{{ vessel.cargo_type }}</td>
+                                    <td>
+                                        {% set clean_status = vessel.status | lower | replace(' ', '') %}
+                                        <span class="badge badge-status status-{{ clean_status }}">
+                                            {{ vessel.status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <form action="{{ url_for('delete_vessel', vessel_id=vessel.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to de-register this vessel?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="De-register Vessel">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">No vessels currently registered in the database. Use the registry form to add your first vessel.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

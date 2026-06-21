@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}HarborNet - Cargo Tracking{% endblock %}
+{% block page_title %}Cargo Manifest & Tracking Control{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Add Cargo Form -->
+    <div class="col-12 col-lg-4">
+        <div class="custom-card">
+            <div class="custom-card-header">
+                <h4 class="custom-card-title"><i class="fa-solid fa-box text-primary me-2"></i>Declare Cargo Container</h4>
+            </div>
+            <div class="custom-card-body">
+                <form action="{{ url_for('cargo') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="container_id" class="form-label">Container ID (ISO Standard)</label>
+                        <input type="text" class="form-control" id="container_id" name="container_id" placeholder="e.g. MSCU9876543" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="vessel_name" class="form-label">Assigned Carrier Vessel</label>
+                        <select class="form-select" id="vessel_name" name="vessel_name" required>
+                            <option value="" disabled selected>Select carrier vessel</option>
+                            {% for vessel in vessels %}
+                            <option value="{{ vessel.vessel_name }}">{{ vessel.vessel_name }} ({{ vessel.imo_number }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="origin" class="form-label">Port of Origin</label>
+                        <input type="text" class="form-control" id="origin" name="origin" placeholder="e.g. Shanghai, CN" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="destination" class="form-label">Destination Port</label>
+                        <input type="text" class="form-control" id="destination" name="destination" placeholder="e.g. Rotterdam, NL" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="current_location" class="form-label">Last Known Location</label>
+                        <input type="text" class="form-control" id="current_location" name="current_location" placeholder="e.g. South China Sea" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="status" class="form-label">Transport Status</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="Loaded" selected>Loaded</option>
+                            <option value="In Transit">In Transit</option>
+                            <option value="Unloaded">Unloaded</option>
+                            <option value="Held">Held</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Add Cargo to Manifest</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Cargo Manifest -->
+    <div class="col-12 col-lg-8">
+        <div class="custom-card">
+            <div class="custom-card-header">
+                <h4 class="custom-card-title"><i class="fa-solid fa-boxes-stacked text-primary me-2"></i>Cargo Logs</h4>
+                <span class="badge bg-primary">{{ cargo | length }} Active Units</span>
+            </div>
+            <div class="custom-card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Container ID</th>
+                                <th>Carrier Vessel</th>
+                                <th>Route (Origin &rarr; Dest)</th>
+                                <th>Current Location</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if cargo %}
+                                {% for item in cargo %}
+                                <tr>
+                                    <td class="fw-semibold text-primary"><i class="fa-solid fa-box text-muted me-2" style="font-size: 0.85rem;"></i>{{ item.container_id }}</td>
+                                    <td>{{ item.vessel_name }}</td>
+                                    <td>
+                                        <div style="font-size: 0.9rem;">
+                                            <span class="text-dark fw-medium">{{ item.origin }}</span>
+                                            <i class="fa-solid fa-arrow-right mx-1 text-muted" style="font-size: 0.75rem;"></i>
+                                            <span class="text-dark fw-medium">{{ item.destination }}</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ item.current_location }}</td>
+                                    <td>
+                                        {% set clean_status = item.status | lower | replace(' ', '') %}
+                                        <span class="badge badge-status status-{{ clean_status }}">
+                                            {{ item.status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <form action="{{ url_for('delete_cargo', cargo_id=item.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to remove this cargo unit?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Cargo Entry">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No cargo units currently tracked in the database. Declare a container using the entry form.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

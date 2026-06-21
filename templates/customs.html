@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}HarborNet - Customs Clearance{% endblock %}
+{% block page_title %}Customs Clearance & Regulatory Auditing{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Log Declaration Form -->
+    <div class="col-12 col-lg-4">
+        <div class="custom-card">
+            <div class="custom-card-header">
+                <h4 class="custom-card-title"><i class="fa-solid fa-file-signature text-primary me-2"></i>Declare Regulatory Customs</h4>
+            </div>
+            <div class="custom-card-body">
+                <form action="{{ url_for('customs') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="container_id" class="form-label">Container ID (Active Manifest)</label>
+                        <select class="form-select" id="container_id" name="container_id" required>
+                            <option value="" disabled selected>Select cargo container</option>
+                            {% for item in cargo %}
+                            <option value="{{ item.container_id }}">{{ item.container_id }} (Carrier: {{ item.vessel_name }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="officer_name" class="form-label">Customs Officer Assigned</label>
+                        <input type="text" class="form-control" id="officer_name" name="officer_name" placeholder="e.g. Officer Davis" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="clearance_status" class="form-label">Clearance Action</label>
+                        <select class="form-select" id="clearance_status" name="clearance_status" required>
+                            <option value="Pending" selected>Pending Inspection</option>
+                            <option value="Cleared">Cleared</option>
+                            <option value="Rejected">Rejected/Held</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="remarks" class="form-label">Audit Remarks</label>
+                        <textarea class="form-control" id="remarks" name="remarks" rows="3" placeholder="Specify inspection details, documentation checks, or seal verifications..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Log Customs Entry</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Declarations List -->
+    <div class="col-12 col-lg-8">
+        <div class="custom-card">
+            <div class="custom-card-header">
+                <h4 class="custom-card-title"><i class="fa-solid fa-shield-halved text-primary me-2"></i>Regulatory Audit Log</h4>
+                <span class="badge bg-primary">{{ customs | length }} Total Filings</span>
+            </div>
+            <div class="custom-card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Container ID</th>
+                                <th>Assigned Officer</th>
+                                <th>Clearance Status</th>
+                                <th>Inspection Remarks</th>
+                                <th class="text-end" style="width: 25%">Audit Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if customs %}
+                                {% for audit in customs %}
+                                <tr>
+                                    <td class="fw-semibold text-primary">{{ audit.container_id }}</td>
+                                    <td>{{ audit.officer_name }}</td>
+                                    <td>
+                                        {% set clean_status = audit.clearance_status | lower | replace(' ', '') %}
+                                        <span class="badge badge-status status-{{ clean_status }}">
+                                            {{ audit.clearance_status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        {{ audit.remarks }}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if audit.clearance_status == 'Pending' %}
+                                        <div class="d-inline-flex gap-1">
+                                            <form action="{{ url_for('update_customs', audit_id=audit.id, status='Cleared') }}" method="POST">
+                                                <button type="submit" class="btn btn-sm btn-success text-white" title="Approve Clearance">
+                                                    <i class="fa-solid fa-circle-check"></i> Approve
+                                                </button>
+                                            </form>
+                                            <form action="{{ url_for('update_customs', audit_id=audit.id, status='Rejected') }}" method="POST">
+                                                <button type="submit" class="btn btn-sm btn-danger text-white" title="Reject & Hold">
+                                                    <i class="fa-solid fa-circle-xmark"></i> Hold
+                                                </button>
+                                            </form>
+                                        </div>
+                                        {% else %}
+                                        <div class="d-inline-flex gap-1">
+                                            <form action="{{ url_for('update_customs', audit_id=audit.id, status='Pending') }}" method="POST">
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Revert to Pending">
+                                                    <i class="fa-solid fa-clock-rotate-left"></i> Re-inspect
+                                                </button>
+                                            </form>
+                                            <form action="{{ url_for('delete_customs', audit_id=audit.id) }}" method="POST" onsubmit="return confirm('Delete this audit log permanently?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Log">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">No customs declarations found. File a declaration container to trigger regulatory tracking.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

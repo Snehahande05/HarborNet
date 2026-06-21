@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HarborNet - Global Maritime Control{% endblock %}</title>
+    <meta name="description" content="HarborNet - Global Port & Maritime Logistics Control Platform. Real-time fleet tracking, cargo processing, customs clearance, and port congestion analytics.">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <nav id="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-anchor fa-xl text-info"></i>
+                <h3>HARBOR<span>NET</span></h3>
+            </div>
+
+            <ul class="list-unstyled components">
+                <li class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard') }}">
+                        <i class="fa-solid fa-chart-pie"></i> Dashboard
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'vessels' %}active{% endif %}">
+                    <a href="{{ url_for('vessels') }}">
+                        <i class="fa-solid fa-ship"></i> Fleet Registry
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'cargo' %}active{% endif %}">
+                    <a href="{{ url_for('cargo') }}">
+                        <i class="fa-solid fa-boxes-stacked"></i> Cargo Tracking
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'customs' %}active{% endif %}">
+                    <a href="{{ url_for('customs') }}">
+                        <i class="fa-solid fa-passport"></i> Customs Clearance
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'ports' %}active{% endif %}">
+                    <a href="{{ url_for('ports') }}">
+                        <i class="fa-solid fa-warehouse"></i> Port Status
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="d-block text-white font-weight-bold">{{ session.get('username', 'Operator') }}</span>
+                        <span class="d-block text-muted" style="font-size: 0.75rem;">Control Room</span>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="text-danger" title="Logout System">
+                        <i class="fa-solid fa-right-from-bracket fa-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Page Content -->
+        <div id="content">
+            <!-- Top Navbar -->
+            <div class="top-navbar">
+                <h1 class="page-title">{% block page_title %}Platform Dashboard{% endblock %}</h1>
+                <div class="user-profile">
+                    <span class="text-muted d-none d-md-inline" style="font-size: 0.9rem;">
+                        <i class="fa-solid fa-circle text-success me-1" style="font-size: 0.6rem;"></i> Live System Stream
+                    </span>
+                    <div class="user-avatar" title="{{ session.get('username', 'O') }}">
+                        {{ session.get('username', 'O')[:1] | upper }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flash Alerts Container -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="alert-container">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- Main Dynamic Content Block -->
+            <div class="container-fluid p-4">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
