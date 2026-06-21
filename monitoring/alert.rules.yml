@@ -1,0 +1,29 @@
+groups:
+  - name: HarborNetAlerts
+    rules:
+      - alert: InstanceDown
+        expr: up{job="harbornet-pods"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Vessel pod {{ $labels.kubernetes_pod_name }} has docked offline"
+          description: "A HarborNet service pod has been unreachable for more than 1 minute."
+
+      - alert: HighRequestLatency
+        expr: sum(rate(harbornet_http_request_latency_seconds_sum[5m])) / sum(rate(harbornet_http_request_latency_seconds_count[5m])) > 1.0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Harbor signal processing delayed"
+          description: "Average latency of HTTP requests is above 1.0s."
+
+      - alert: HighErrorRate
+        expr: (sum(rate(harbornet_errors_total[5m])) / sum(rate(harbornet_http_requests_total[5m]))) * 100 > 5.0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Vessel navigation errors elevated"
+          description: "HTTP 5xx error rate is above 5% on pod {{ $labels.kubernetes_pod_name }}."

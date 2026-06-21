@@ -11,10 +11,14 @@ spec:
     metadata:
       labels:
         app: harbornet
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5000"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
         - name: harbornet-app
-          image: localhost/harbornet-app:latest
+          image: harbornet-app:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000

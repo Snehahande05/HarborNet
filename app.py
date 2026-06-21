@@ -1,14 +1,64 @@
 import os
 import sqlite3
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+import time
+from threading import Lock
+from flask import Flask, render_template, request, redirect, url_for, flash, session, g, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'harbornet-secret-dev-key-9922')
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'harbornet.db')
 
+# Prometheus Metrics Definition
+REQUEST_COUNT = Counter(
+    'harbornet_http_requests_total',
+    'Total HTTP Requests',
+    ['method', 'endpoint', 'http_status']
+)
+REQUEST_LATENCY = Histogram(
+    'harbornet_http_request_latency_seconds',
+    'HTTP Request Latency',
+    ['method', 'endpoint']
+)
+UPTIME_GAUGE = Gauge(
+    'harbornet_uptime_seconds',
+    'Application uptime in seconds'
+)
+ERROR_COUNT = Counter(
+    'harbornet_errors_total',
+    'Total number of application errors',
+    ['method', 'endpoint', 'http_status']
+)
+ACTIVE_USERS = Gauge(
+    'harbornet_active_users',
+    'Number of active users in the last 5 minutes'
+)
+DB_QUERIES = Counter(
+    'harbornet_db_queries_total',
+    'Total number of database queries executed'
+)
+
+APP_START_TIME = time.time()
+ACTIVE_USERS_TRACKER = {}  # user_id -> last_active_timestamp
+tracker_lock = Lock()
+
+# Custom sqlite3 Connection class to instrument query counting
+class InstrumentedConnection(sqlite3.Connection):
+    def execute(self, *args, **kwargs):
+        DB_QUERIES.inc()
+        return super().execute(*args, **kwargs)
+        
+    def executemany(self, *args, **kwargs):
+        DB_QUERIES.inc()
+        return super().executemany(*args, **kwargs)
+        
+    def executescript(self, *args, **kwargs):
+        DB_QUERIES.inc()
+        return super().executescript(*args, **kwargs)
+
 def get_db_connection():
-    conn = sqlite3.connect(DATABASE)
+    conn = sqlite3.connect(DATABASE, factory=InstrumentedConnection)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -126,6 +176,50 @@ def init_db():
 
 # Initialize DB on import/start
 init_db()
+
+# Middleware Hooks for Metrics Collection
+@app.before_request
+def before_request():
+    g.start_time = time.time()
+    if 'user_id' in session:
+        user_id = session['user_id']
+        with tracker_lock:
+            ACTIVE_USERS_TRACKER[user_id] = time.time()
+
+@app.after_request
+def after_request(response):
+    if request.path == '/metrics':
+        return response
+        
+    latency = time.time() - g.get('start_time', time.time())
+    endpoint = request.endpoint or 'unknown'
+    method = request.method
+    status = str(response.status_code)
+    
+    REQUEST_COUNT.labels(method=method, endpoint=endpoint, http_status=status).inc()
+    REQUEST_LATENCY.labels(method=method, endpoint=endpoint).observe(latency)
+    
+    if response.status_code >= 500:
+        ERROR_COUNT.labels(method=method, endpoint=endpoint, http_status=status).inc()
+        
+    return response
+
+# Metrics Endpoint
+@app.route('/metrics')
+def metrics():
+    # Update uptime gauge
+    UPTIME_GAUGE.set(time.time() - APP_START_TIME)
+    
+    # Calculate active users (active in the last 5 minutes)
+    now = time.time()
+    with tracker_lock:
+        inactive = [uid for uid, last_seen in ACTIVE_USERS_TRACKER.items() if now - last_seen > 300]
+        for uid in inactive:
+            del ACTIVE_USERS_TRACKER[uid]
+        active_count = len(ACTIVE_USERS_TRACKER)
+    ACTIVE_USERS.set(active_count)
+    
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 
 # Decorator/helper to protect routes
 def login_required(f):
@@ -460,5 +554,5 @@ def delete_port(port_id):
     return redirect(url_for('ports'))
 
 if __name__ == '__main__':
-    # Flask runs on port 5001 as requested
+    # Flask runs on port 5001 for local and container consistency
     app.run(host='0.0.0.0', port=5001, debug=True)
